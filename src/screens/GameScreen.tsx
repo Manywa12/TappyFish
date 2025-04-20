@@ -13,11 +13,12 @@ const BUFFER_ZONE = FISH_SIZE * 1.5;
 
 type GameScreenProps = {
   onGameOver: (score: number) => void;
+  coins: number; // Aangepaste prop voor de coin-teller
+  setCoins: React.Dispatch<React.SetStateAction<number>>; // Functie om coins buiten dit component bij te werken
 };
 
-const GameScreen: React.FC<GameScreenProps> = ({ onGameOver }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) => {
   const [score, setScore] = useState(0);
-  const [coins, setCoins] = useState(0);
   const [gameEngine, setGameEngine] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -40,24 +41,20 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver }) => {
     setIsPaused(false);
     setIsPlaying(false);
     setScore(0);
-    setCoins(0);
+    setCoins(0); // Reset coins bij herstart
     if (gameEngine) {
       gameEngine.stop();
       gameEngine.start();
     }
-  }, [gameEngine]);
+  }, [gameEngine, setCoins]);
 
   const generateObstaclePositions = () => {
-    // Fixed height for obstacles (25% of screen height)
     const obstacleHeight = height * 0.25;
-    
-    // Always center the gap vertically
     const centerY = height / 2;
-    const gapSize = height * 0.4; // 40% of screen height for gap
-    
+    const gapSize = height * 0.4;
     return {
-      top: centerY - (gapSize / 2),           // Top obstacle ends at gap start
-      bottom: centerY + (gapSize / 2),        // Bottom obstacle starts at gap end
+      top: centerY - (gapSize / 2),
+      bottom: centerY + (gapSize / 2),
     };
   };
 
@@ -132,10 +129,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver }) => {
     }
 
     if (
-      Math.abs(fish.position.x + FISH_SIZE/2 - (coin.position.x + FISH_SIZE/4)) < FISH_SIZE * 0.6 &&
-      Math.abs(fish.position.y + FISH_SIZE/3 - coin.position.y) < FISH_SIZE * 0.6
+      Math.abs(fish.position.x + FISH_SIZE / 2 - (coin.position.x + FISH_SIZE / 4)) < FISH_SIZE * 0.6 &&
+      Math.abs(fish.position.y + FISH_SIZE / 3 - coin.position.y) < FISH_SIZE * 0.6
     ) {
-      setCoins((prev) => prev + 1);
+      setCoins((prev) => prev + 1);  // Update coin count
       setScore((prev) => prev + 1);
       coin.position.x = width;
       const { top, bottom } = generateObstaclePositions();
@@ -143,8 +140,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver }) => {
     }
 
     const hasCollided =
-      fish.position.y < BUFFER_ZONE/2 ||
-      fish.position.y > height - FISH_SIZE - BUFFER_ZONE/2 ||
+      fish.position.y < BUFFER_ZONE / 2 ||
+      fish.position.y > height - FISH_SIZE - BUFFER_ZONE / 2 ||
       (topObstacle.position.x < fish.position.x + FISH_SIZE * 0.8 &&
         topObstacle.position.x + 20 > fish.position.x &&
         fish.position.y < topObstacle.position.y) ||
@@ -291,32 +288,22 @@ const styles = StyleSheet.create({
   },
   pauseButtons: {
     flexDirection: 'row',
-    gap: width * 0.05,
   },
   pauseButton: {
-    backgroundColor: '#8E44AD',
-    width: width * 0.15,
-    height: width * 0.15,
-    borderRadius: width * 0.075,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
-  },
-  pauseButtonFixed: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: width * 0.12,
-    height: width * 0.12,
-    borderRadius: width * 0.06,
+    backgroundColor: '#3498db',
+    padding: 10,
+    margin: 5,
+    borderRadius: 5,
   },
   pauseButtonText: {
     color: '#FFF',
-    fontSize: width * 0.08,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontSize: width * 0.06,
+    fontWeight: 'bold',
+  },
+  pauseButtonFixed: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
 });
 

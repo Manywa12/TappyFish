@@ -5,12 +5,13 @@ const { width, height } = Dimensions.get('window');
 
 type GameOverScreenProps = {
   score: number;
+  coins: number;  // Voeg de coins toe als prop
   onRestart: () => void;
   onHome: () => void;
   onPlay: () => void;
 };
 
-const GameOverScreen: React.FC<GameOverScreenProps> = ({ score, onRestart, onHome, onPlay }) => {
+const GameOverScreen: React.FC<GameOverScreenProps> = ({ score, coins, onRestart, onHome, onPlay }) => {
   return (
     <ImageBackground
       source={require('../../assets/images/background.jpg')}
@@ -20,6 +21,7 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({ score, onRestart, onHom
         <View style={styles.menuContainer}>
           <Text style={styles.title}>GAME OVER</Text>
           <Text style={styles.score}>Score: {score}</Text>
+          <Text style={styles.coins}>Coins: {coins}</Text> {/* Toon de coins */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={onPlay}>
               <Text style={styles.buttonIcon}>▶</Text>
@@ -66,6 +68,15 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   score: {
+    fontSize: width * 0.06,
+    color: '#FFF',
+    marginBottom: height * 0.03,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  coins: {
     fontSize: width * 0.06,
     color: '#FFF',
     marginBottom: height * 0.03,
