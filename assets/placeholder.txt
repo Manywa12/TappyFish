@@ -1,0 +1,6 @@
+This directory will contain the following game assets:
+- fish.png: The main character (currently using an orange rectangle in the game)
+- coin.png: Collectible items (currently using a gold circle in the game)
+- background.png: Game background (currently using a blue background color)
+
+These placeholder shapes can be replaced with actual game assets later.

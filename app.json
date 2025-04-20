@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "TappyFish",
+    "slug": "tappy-fish",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/fish.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/fish.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E90FF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tappyfish.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/fish.png",
+        "backgroundColor": "#1E90FF"
+      },
+      "package": "com.tappyfish.app"
+    },
+    "web": {
+      "favicon": "./assets/images/fish.png"
+    },
+    "newArchEnabled": true
+  }
+}
