@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Animated, Easing, ImageBackground } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const INITIAL_COINS = 100;
 
 interface ShopItem {
   id: string;
@@ -20,10 +19,12 @@ const shopItems: ShopItem[] = [
 type ShopScreenProps = {
   onBack: () => void;
   onFishPurchased: (fishId: string) => void;
+  coins: number;
+  setCoins: React.Dispatch<React.SetStateAction<number>>;
 };
 
-const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
-  const [coins, setCoins] = useState(INITIAL_COINS);
+const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased, coins: propCoins, setCoins: setPropCoins }) => {
+  const [localCoins, setLocalCoins] = useState(propCoins);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [purchasedSkins, setPurchasedSkins] = useState<string[]>([]);
   const currentItem = shopItems[currentIndex];
@@ -33,11 +34,13 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
   const buyButtonAnimation = useState(new Animated.Value(1))[0];
 
   useEffect(() => {
+    setLocalCoins(propCoins);
+  }, [propCoins]);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
-        const storedCoins = await AsyncStorage.getItem('coins');
         const storedSkins = await AsyncStorage.getItem('purchasedSkins');
-        if (storedCoins !== null) setCoins(parseInt(storedCoins));
         if (storedSkins !== null) setPurchasedSkins(JSON.parse(storedSkins));
       } catch (error) {
         console.error('Fout bij laden van data:', error);
@@ -47,9 +50,8 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem('coins', coins.toString());
     AsyncStorage.setItem('purchasedSkins', JSON.stringify(purchasedSkins));
-  }, [coins, purchasedSkins]);
+  }, [purchasedSkins]);
 
   const animateArrowPress = (animationValue: Animated.Value) => {
     Animated.sequence([
@@ -78,7 +80,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
   const handlePurchase = useCallback((item: ShopItem) => {
     if (purchasedSkins.includes(item.id)) return;
     animateBuyButtonPress();
-    if (coins >= item.price) {
+    if (localCoins >= item.price) {
       Alert.alert(
         'Aankoop bevestigen',
         `Wil je de ${item.name} kopen voor ${item.price} coins?`,
@@ -87,7 +89,11 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
           {
             text: 'Kopen',
             onPress: () => {
-              setCoins(currentCoins => currentCoins - item.price);
+              setLocalCoins(currentCoins => currentCoins - item.price);
+              if (setPropCoins) {
+                setPropCoins(currentCoins => currentCoins - item.price);
+                AsyncStorage.setItem('coins', (localCoins - item.price).toString());
+              }
               setPurchasedSkins(prevSkins => [...prevSkins, item.id]);
               onFishPurchased(item.id);
               Alert.alert('Aankoop gelukt', `Je hebt de ${item.name} gekocht!`);
@@ -99,15 +105,14 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
     } else {
       Alert.alert('Niet genoeg coins', 'Je hebt niet genoeg coins om deze vis te kopen.', [{ text: 'Oké' }]);
     }
-  }, [coins, purchasedSkins, onFishPurchased, animateBuyButtonPress]);
+  }, [localCoins, purchasedSkins, onFishPurchased, animateBuyButtonPress, setPropCoins]);
 
   return (
     <View style={styles.container}>
       <ImageBackground source={require('../../assets/images/background.jpg')} style={styles.backgroundImage}>
         <View style={styles.overlay}>
-          {/* Nieuwe Coins Card linksboven */}
           <View style={styles.coinsCard}>
-            <Text style={styles.coinsCardText}>{coins}</Text>
+            <Text style={styles.coinsCardText}>{localCoins}</Text>
             <TouchableOpacity style={styles.plusButton}>
               <Text style={styles.plusText}>+</Text>
             </TouchableOpacity>
@@ -121,7 +126,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
             <View style={styles.itemContainer}>
               {currentItem && (
                 <>
-                  <View style={[styles.fishContainer, { backgroundColor: 'transparent' }]}> {/* Achtergrond transparant gemaakt */}
+                  <View style={[styles.fishContainer, { backgroundColor: 'transparent' }]}>
                     <Image source={currentItem.image} style={styles.fishImage} resizeMode="contain" />
                   </View>
                   <Text style={styles.itemName}>{currentItem.name}</Text>
@@ -135,7 +140,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, onFishPurchased }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Koop Button meer naar onder */}
           {currentItem && (
             <TouchableOpacity
               style={[styles.buyButton, purchasedSkins.includes(currentItem.id) && styles.boughtButton]}
@@ -174,7 +178,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     alignItems: 'center',
-    justifyContent: 'space-between', // Verdeelt de verticale ruimte
+    justifyContent: 'space-between',
   },
   header: {
     alignSelf: 'flex-end',
@@ -198,7 +202,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     elevation: 5,
     marginBottom: 20,
-    marginTop: 70, // Voeg een marginTop toe om het vak naar beneden te verplaatsen
+    marginTop: 70,
   },
   arrowButton: {
     padding: 15,
@@ -243,7 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 8,
     elevation: 3,
-    marginTop: 20, // Meer ruimte boven de koopknop
+    marginTop: 20,
   },
   buyButtonText: {
     color: '#fff',

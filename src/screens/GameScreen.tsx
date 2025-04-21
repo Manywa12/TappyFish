@@ -1,27 +1,47 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, View, ImageBackground, TouchableOpacity } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import Fish from '../components/Fish';
 import Coin from '../components/Coin';
 import Obstacle from '../components/Obstacle';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
-const GAME_SPEED = 3;
 const FISH_SIZE = width * 0.2;
-const MIN_GAP = height * 0.8; // Set minimum gap to 80% of screen height for very wide, easily passable spaces
+const MIN_GAP = height * 0.8;
 const BUFFER_ZONE = FISH_SIZE * 1.5;
 
 type GameScreenProps = {
   onGameOver: (score: number) => void;
-  coins: number; // Aangepaste prop voor de coin-teller
-  setCoins: React.Dispatch<React.SetStateAction<number>>; // Functie om coins buiten dit component bij te werken
+  coins: number;
+  setCoins: React.Dispatch<React.SetStateAction<number>>;
+  selectedMode?: string | null;
 };
 
-const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, selectedMode }) => {
   const [score, setScore] = useState(0);
   const [gameEngine, setGameEngine] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [gameSpeed, setGameSpeed] = useState(3);
+  const [sessionCoins, setSessionCoins] = useState(0);
+
+
+  useEffect(() => {
+    switch (selectedMode) {
+      case 'easy':
+        setGameSpeed(2);
+        break;
+      case 'medium':
+        setGameSpeed(6);
+        break;
+      case 'hard':
+        setGameSpeed(12);
+        break;
+      default:
+        setGameSpeed(3);
+    }
+  }, [selectedMode]);
 
   const handlePausePress = useCallback(() => {
     setIsPaused(true);
@@ -41,7 +61,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
     setIsPaused(false);
     setIsPlaying(false);
     setScore(0);
-    setCoins(0); // Reset coins bij herstart
+    setSessionCoins(0);
     if (gameEngine) {
       gameEngine.stop();
       gameEngine.start();
@@ -84,7 +104,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
       };
     })(),
   };
-
   const physics = (entities: any, { touches, time, dispatch }: any) => {
     if (!isPlaying || isPaused) {
       touches.filter((t: any) => t.type === 'press').forEach(() => {
@@ -92,34 +111,39 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
       });
       return entities;
     }
-
+  
     let fish = entities.fish;
     let coin = entities.coin;
     let topObstacle = entities.topObstacle;
     let bottomObstacle = entities.bottomObstacle;
-
-    fish.velocity.y += height * 0.0008;
+  
+    // Dynamische zwaartekracht op basis van score
+    const baseGravity = height * 0.0008;
+    const gravityFactor = 1 + score * 0.03; // elke punt verhoogt zwaartekracht met 3%
+    const gravity = baseGravity * gravityFactor;
+  
+    fish.velocity.y += gravity;
     fish.position.y += fish.velocity.y;
     fish.renderer = <Fish position={fish.position} />;
-
+  
     touches.filter((t: any) => t.type === 'press').forEach(() => {
       fish.velocity.y = -height * 0.012;
     });
-
-    coin.position.x -= GAME_SPEED;
-    topObstacle.position.x -= GAME_SPEED;
-    bottomObstacle.position.x -= GAME_SPEED;
-
+  
+    coin.position.x -= gameSpeed;
+    topObstacle.position.x -= gameSpeed;
+    bottomObstacle.position.x -= gameSpeed;
+  
     coin.renderer = <Coin position={coin.position} />;
     topObstacle.renderer = <Obstacle position={topObstacle.position} isTop={true} />;
     bottomObstacle.renderer = <Obstacle position={bottomObstacle.position} isTop={false} />;
-
+  
     if (coin.position.x < -20) {
       coin.position.x = width;
       const { top, bottom } = generateObstaclePositions();
       coin.position.y = (top + (height - bottom)) / 2;
     }
-
+  
     if (topObstacle.position.x < -20) {
       const { top, bottom } = generateObstaclePositions();
       topObstacle.position.x = width;
@@ -127,18 +151,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
       bottomObstacle.position.x = width;
       bottomObstacle.position.y = bottom;
     }
-
+  
     if (
       Math.abs(fish.position.x + FISH_SIZE / 2 - (coin.position.x + FISH_SIZE / 4)) < FISH_SIZE * 0.6 &&
       Math.abs(fish.position.y + FISH_SIZE / 3 - coin.position.y) < FISH_SIZE * 0.6
     ) {
-      setCoins((prev) => prev + 1);  // Update coin count
+      setSessionCoins((prev) => prev + 1);
       setScore((prev) => prev + 1);
       coin.position.x = width;
       const { top, bottom } = generateObstaclePositions();
       coin.position.y = (top + (height - bottom)) / 2;
     }
-
+  
     const hasCollided =
       fish.position.y < BUFFER_ZONE / 2 ||
       fish.position.y > height - FISH_SIZE - BUFFER_ZONE / 2 ||
@@ -148,13 +172,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
       (bottomObstacle.position.x < fish.position.x + FISH_SIZE * 0.8 &&
         bottomObstacle.position.x + 20 > fish.position.x &&
         fish.position.y + FISH_SIZE * 0.6 > bottomObstacle.position.y);
-
+  
     if (hasCollided) {
       dispatch({ type: "game-over" });
     }
-
+  
     return entities;
   };
+  
 
   const renderPauseMenu = () => (
     <View style={styles.pauseMenu}>
@@ -173,14 +198,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
   );
 
   return (
-    <ImageBackground 
+    <ImageBackground
       source={require('../../assets/images/background.jpg')}
       style={styles.container}
     >
       <View style={styles.container}>
         <View style={styles.hud}>
           <Text style={styles.score}>Score: {score}</Text>
-          <Text style={styles.coins}>Coins: {coins}</Text>
+          <Text style={styles.coins}>Coins: {sessionCoins}</Text>
+
         </View>
         <GameEngine
           ref={(ref) => setGameEngine(ref)}
@@ -192,6 +218,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
               if (gameEngine) {
                 gameEngine.stop();
               }
+              const totalCoins = coins + sessionCoins;
+              AsyncStorage.setItem('coins', totalCoins.toString());
+              setCoins(totalCoins);
               onGameOver(score);
             }
           }}
@@ -203,8 +232,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins }) 
           </View>
         )}
         {isPaused && renderPauseMenu()}
-        <TouchableOpacity 
-          style={[styles.pauseButton, styles.pauseButtonFixed]} 
+        <TouchableOpacity
+          style={[styles.pauseButton, styles.pauseButtonFixed]}
           onPress={handlePausePress}
         >
           <Text style={styles.pauseButtonText}>II</Text>
@@ -302,8 +331,8 @@ const styles = StyleSheet.create({
   },
   pauseButtonFixed: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    bottom: 20,
+    right: 20,
   },
 });
 
