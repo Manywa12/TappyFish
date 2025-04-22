@@ -21,7 +21,8 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({ score, coins, onRestart
         <View style={styles.menuContainer}>
           <Text style={styles.title}>GAME OVER</Text>
           <Text style={styles.score}>Score: {score}</Text>
-          <Text style={styles.coins}>Coins: {coins}</Text> {/* Toon de coins */}
+          <Text style={styles.coins}>Coins: {coins}</Text>
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={onPlay}>
               <Text style={styles.buttonIcon}>▶</Text>

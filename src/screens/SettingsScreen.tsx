@@ -20,39 +20,42 @@ const SettingsScreen = ({ onBack }: { onBack: () => void }) => {
       source={require('../../assets/images/background.jpg')}
       style={styles.container}
     >
-      <View style={styles.overlay}>
-        <Text style={styles.title}>Instellingen</Text>
+ <View style={styles.overlay}>
+  <Text style={styles.title}>Instellingen</Text>
 
-        <View style={styles.settingsContainer}> {/* Nieuwe container voor de instellingen */}
-          <View style={styles.settingItem}>
-            <Text style={styles.settingText}>Geluid</Text>
-            <Switch
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={soundEnabled ? '#f4f3f4' : '#767577'}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={toggleSound}
-              value={soundEnabled}
-            />
-          </View>
+  {/* Nieuwe container voor de instellingen */}
+  <View style={styles.settingsContainer}>
+    <View style={styles.settingItem}>
+      <Text style={styles.settingText}>Geluid</Text>
+      <Switch
+        trackColor={{ false: '#767577', true: '#81b0ff' }}
+        thumbColor={soundEnabled ? '#f4f3f4' : '#767577'}
+        ios_backgroundColor="#3e3e3e"
+        onValueChange={toggleSound}
+        value={soundEnabled}
+      />
+    </View>
 
-          <View style={styles.settingItem}>
-            <Text style={styles.settingText}>Muziek</Text>
-            <Switch
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={musicEnabled ? '#f4f3f4' : '#767577'}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={toggleMusic}
-              value={musicEnabled}
-            />
-          </View>
-        </View>
+    <View style={styles.settingItem}>
+      <Text style={styles.settingText}>Muziek</Text>
+      <Switch
+        trackColor={{ false: '#767577', true: '#81b0ff' }}
+        thumbColor={musicEnabled ? '#f4f3f4' : '#767577'}
+        ios_backgroundColor="#3e3e3e"
+        onValueChange={toggleMusic}
+        value={musicEnabled}
+      />
+    </View>
+  </View>
 
-        <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>Terug naar Start</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+  <View style={styles.bottomButtonContainer}>
+    <TouchableOpacity style={styles.backButton} onPress={onBack}>
+      <Text style={styles.backButtonText}>Terug naar Start</Text>
+    </TouchableOpacity>
+  </View>
+</View>
+
+    
     </ImageBackground>
   );
 };
