@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image } from 'react-native';
 
 type SkinsScreenProps = {
   onBack: () => void;
   purchasedSkins: string[];
-  onSkinSelected: (skinId: string) => void; // Callback om de geselecteerde skin door te geven
+  onSkinSelected: (skinId: string) => void;
 };
 
 const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSkinSelected }) => {
-  const [selectedSkin, setSelectedSkin] = useState<string | null>(null);
+  const [selectedSkin, setSelectedSkin] = useState<string | null>('default');
 
   const handleSkinPress = useCallback((skinId: string) => {
     setSelectedSkin(skinId);
@@ -20,44 +20,67 @@ const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSki
     }
   }, [selectedSkin, onSkinSelected]);
 
-  const renderItem = useCallback(({ item }: { item: string }) => (
-    <TouchableOpacity style={[styles.gridItem, selectedSkin === item && styles.selectedGridItem]} onPress={() => handleSkinPress(item)}>
-      <Image source={getFishImage(item)} style={styles.gridImage} resizeMode="contain" />
-      {/* Je zou hier de naam van de skin kunnen toevoegen als je wilt */}
-    </TouchableOpacity>
-  ), [selectedSkin, handleSkinPress]);
-
   return (
     <ImageBackground
-      source={require('../../assets/images/background.jpg')} // Zorg ervoor dat het pad correct is
+      source={require('../../assets/images/background.jpg')}
       style={styles.container}
     >
       <View style={styles.overlay}>
         <Text style={styles.title}>Mijn Skins</Text>
 
-        {purchasedSkins.length > 0 ? (
-          <>
-            <FlatList
-              data={purchasedSkins}
-              keyExtractor={(item) => item}
-              renderItem={renderItem}
-              numColumns={3} // Of een ander aantal kolommen dat goed past
-              contentContainerStyle={styles.gridContainer}
+        <View style={styles.topPreview}>
+          <Text style={styles.currentSkinText}>Huidige Skin:</Text>
+     <TouchableOpacity style={styles.selectedFishContainer} onPress={() => {}}>
+            <Image
+              source={
+                selectedSkin === 'default'
+                  ? require('../../assets/images/fish.png')
+                  : selectedSkin
+                  ? getFishImage(selectedSkin)
+                  : require('../../assets/images/fish.png')
+              }
+              style={styles.selectedFishImage}
+              resizeMode="contain"
             />
+          </TouchableOpacity>
+        </View>
 
-            {selectedSkin && (
-              <View style={styles.detailContainer}>
-                <Text style={styles.detailTitle}>Geselecteerde Skin:</Text>
-                <Image source={getFishImage(selectedSkin)} style={styles.detailImage} resizeMode="contain" />
-                <Text style={styles.detailName}>{selectedSkin}</Text> {/* Toon de naam van de skin */}
-                <TouchableOpacity style={styles.selectButton} onPress={handleSelectSkin}>
-                  <Text style={styles.selectButtonText}>Selecteren</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </>
-        ) : (
-          <Text style={styles.emptyText}>Je hebt nog geen skins gekocht.</Text>
+        <View style={styles.bottomPreviews}>
+          <TouchableOpacity
+            style={[styles.previewPlaceholder, selectedSkin === 'default' && styles.selectedPlaceholder]}
+            onPress={() => handleSkinPress('default')}
+          >
+            <Image source={require('../../assets/images/fish.png')} style={styles.previewImage} resizeMode="contain" />
+          </TouchableOpacity>
+          {Array(3)
+            .fill(null)
+            .map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.previewPlaceholder,
+                  purchasedSkins[index] === selectedSkin && styles.selectedPlaceholder,
+                ]}
+                onPress={() => {
+                  if (purchasedSkins[index]) {
+                    handleSkinPress(purchasedSkins[index]);
+                  }
+                }}
+                disabled={!purchasedSkins[index]}
+              >
+                {purchasedSkins[index] && (
+                  <Image
+                    source={getFishImage(purchasedSkins[index])}
+                    style={styles.previewImage}
+                    resizeMode="contain"
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+        </View>
+
+        {purchasedSkins.length === 0 && (
+          <Text style={styles.noSkinsText}>Je hebt nog geen skins gekocht.</Text>
         )}
 
         <View style={styles.bottomButtonContainer}>
@@ -70,7 +93,6 @@ const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSki
   );
 };
 
-// Functie om de afbeelding van de vis te krijgen (dezelfde als in je originele code)
 const getFishImage = (fishId: string) => {
   switch (fishId) {
     case 'fish1':
@@ -91,18 +113,19 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
-    width: '100%',
-    height: '100%',
-    justifyContent: 'space-between', // Verdeelt de verticale ruimte
+    justifyContent: 'space-between',
   },
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, color: '#fff', textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 2 },
-  gridContainer: { paddingBottom: 20 },
-  gridItem: {
-    width: 100,
-    height: 100,
-    margin: 10,
+
+  topPreview: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  selectedFishContainer: {
+    width: 150,
+    height: 150,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 8,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -111,48 +134,69 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  selectedGridItem: {
-    borderColor: '#007bff',
-    borderWidth: 3,
-  },
-  gridImage: { width: 80, height: 80 },
-  detailContainer: {
-    marginTop: 30,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 20,
+  selectedFishImage: { width: 120, height: 120 },
+  emptySelectedFishContainer: {
+    width: 150,
+    height: 150,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  detailTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#fff', textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
-  detailImage: { width: 150, height: 150, marginBottom: 10 },
-  detailName: { fontSize: 16, color: '#fff', marginBottom: 15, textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
+  emptyText: { color: '#fff', fontSize: 16 },
   selectButton: {
     backgroundColor: '#007bff',
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 8,
+    marginTop: 10,
   },
   selectButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold', textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
+
+  bottomPreviews: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  previewPlaceholder: {
+    width: 80,
+    height: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: { width: 60, height: 60 },
+  selectedPlaceholder: {
+    borderColor: '#007bff',
+    borderWidth: 2,
+  },
+
   bottomButtonContainer: {
     width: '100%',
     alignItems: 'center',
     marginBottom: 20,
   },
   backButton: {
-    backgroundColor: 'rgba(0, 123, 255, 0.8)', // Blauwe kleur van de ShopScreen
-    paddingVertical: 15, // Iets meer verticale padding
-    borderRadius: 10, // Afgeronde hoeken zoals de andere blauwe knop
-    width: '90%', // Dezelfde breedte als de "Terug naar Start" knop in de ShopScreen
+    backgroundColor: 'rgba(0, 123, 255, 0.8)',
+    paddingVertical: 15,
+    borderRadius: 10,
+    width: '90%',
     alignItems: 'center',
-    elevation: 3, // Voeg een subtiele schaduw toe
+    elevation: 3,
   },
-  backButtonText: { color: '#fff', fontSize: 20, fontWeight: 'bold', textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 }, // Grotere tekst en subtiele schaduw
-  emptyText: { fontSize: 18, color: '#fff', marginTop: 50, textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
+  currentSkinText: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 5,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  backButtonText: { color: '#fff', fontSize: 20, fontWeight: 'bold', textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
+  noSkinsText: { fontSize: 18, color: '#fff', marginTop: 50, textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
 });
 
 export default SkinsScreen;
