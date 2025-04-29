@@ -6,12 +6,26 @@ const FISH_SIZE = width * 0.2; // Increased from 0.15 to 0.2
 
 type FishProps = {
   position: { x: number; y: number };
+  skinId?: string;
 };
 
-const Fish: React.FC<FishProps> = ({ position }) => {
+const getFishImage = (skinId: string = 'default') => {
+  switch (skinId) {
+    case 'fish1':
+      return require('../../assets/images/fish_gold.png');
+    case 'fish2':
+      return require('../../assets/images/fish_blue.png');
+    case 'fish3':
+      return require('../../assets/images/fish_orange.png');
+    default:
+      return require('../../assets/images/fish.png');
+  }
+};
+
+const Fish: React.FC<FishProps> = ({ position, skinId = 'default' }) => {
   return (
     <Image
-      source={require('../../assets/images/fish.png')}
+      source={getFishImage(skinId)}
       style={[
         styles.fish,
         {

@@ -5,20 +5,44 @@ import Fish from '../components/Fish';
 import Coin from '../components/Coin';
 import Obstacle from '../components/Obstacle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SoundManager from '../utils/SoundManager';
 
 const { width, height } = Dimensions.get('window');
-const FISH_SIZE = width * 0.2;
-const MIN_GAP = height * 0.8;
-const BUFFER_ZONE = FISH_SIZE * 1.5;
+const FISH_SIZE = Math.min(width * 0.15, 80); // Cap maximum fish size
+// Game difficulty parameters
+const DIFFICULTY_SETTINGS = {
+  easy: {
+    speed: 3,
+    gapSize: height * 0.5, // 50% of screen height - much easier to navigate
+    gravityMultiplier: 0.6, // Much lower gravity
+    bufferZone: FISH_SIZE * 1.6, // Very forgiving collisions
+    scoreMultiplier: 0.5, // Lower score increase
+  },
+  medium: {
+    speed: 6,
+    gapSize: height * 0.35, // 35% of screen height - moderate difficulty
+    gravityMultiplier: 1, // Normal gravity
+    bufferZone: FISH_SIZE * 1.2, // Standard collisions
+    scoreMultiplier: 1, // Normal score increase
+  },
+  hard: {
+    speed: 9,
+    gapSize: height * 0.2, // 20% of screen height - very challenging
+    gravityMultiplier: 1.4, // Much higher gravity
+    bufferZone: FISH_SIZE * 0.8, // Very strict collisions
+    scoreMultiplier: 2, // Double score increase
+  }
+};
 
 type GameScreenProps = {
   onGameOver: (score: number) => void;
   coins: number;
   setCoins: React.Dispatch<React.SetStateAction<number>>;
   selectedMode?: string | null;
+  selectedSkin?: string;
 };
 
-const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, selectedMode }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, selectedMode, selectedSkin = 'default' }) => {
   const [score, setScore] = useState(0);
   const [gameEngine, setGameEngine] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -27,20 +51,23 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
   const [sessionCoins, setSessionCoins] = useState(0);
 
 
-  useEffect(() => {
+  // Get current difficulty settings
+  const getDifficultySettings = () => {
     switch (selectedMode) {
       case 'easy':
-        setGameSpeed(2);
-        break;
+        return DIFFICULTY_SETTINGS.easy;
       case 'medium':
-        setGameSpeed(6);
-        break;
+        return DIFFICULTY_SETTINGS.medium;
       case 'hard':
-        setGameSpeed(12);
-        break;
+        return DIFFICULTY_SETTINGS.hard;
       default:
-        setGameSpeed(3);
+        return DIFFICULTY_SETTINGS.medium;
     }
+  };
+
+  useEffect(() => {
+    const difficulty = getDifficultySettings();
+    setGameSpeed(difficulty.speed);
   }, [selectedMode]);
 
   const handlePausePress = useCallback(() => {
@@ -69,9 +96,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
   }, [gameEngine, setCoins]);
 
   const generateObstaclePositions = () => {
+    const difficulty = getDifficultySettings();
     const obstacleHeight = height * 0.25;
     const centerY = height / 2;
-    const gapSize = height * 0.4;
+    const gapSize = difficulty.gapSize;
     return {
       top: centerY - (gapSize / 2),
       bottom: centerY + (gapSize / 2),
@@ -82,7 +110,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
     fish: {
       position: { x: width * 0.2, y: height / 10 },
       velocity: { x: 0, y: 0 },
-      renderer: <Fish position={{ x: width * 0.2, y: height / 10 }} />,
+      skinId: selectedSkin,
+      renderer: <Fish position={{ x: width * 0.2, y: height / 10 }} skinId={selectedSkin} />,
     },
     coin: {
       position: { x: width, y: Math.random() * (height - FISH_SIZE * 2) + FISH_SIZE },
@@ -105,10 +134,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
     })(),
   };
   const physics = (entities: any, { touches, time, dispatch }: any) => {
+    // Handle touch to start
+    touches.filter((t: any) => t.type === 'press').forEach(() => {
+      if (!isPaused && !isPlaying) {
+        setIsPlaying(true);
+      }
+    });
+
+    // Return early if game is paused or not started yet
     if (!isPlaying || isPaused) {
-      touches.filter((t: any) => t.type === 'press').forEach(() => {
-        if (!isPaused) setIsPlaying(true);
-      });
       return entities;
     }
   
@@ -116,23 +150,27 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
     let coin = entities.coin;
     let topObstacle = entities.topObstacle;
     let bottomObstacle = entities.bottomObstacle;
+    const difficulty = getDifficultySettings();
   
-    // Dynamische zwaartekracht op basis van score
+    // Apply difficulty-based gravity
     const baseGravity = height * 0.0008;
-    const gravityFactor = 1 + score * 0.03; // elke punt verhoogt zwaartekracht met 3%
+    const gravityFactor = (1 + score * 0.02) * difficulty.gravityMultiplier;
     const gravity = baseGravity * gravityFactor;
   
     fish.velocity.y += gravity;
     fish.position.y += fish.velocity.y;
-    fish.renderer = <Fish position={fish.position} />;
+    fish.renderer = <Fish position={fish.position} skinId={fish.skinId} />;
   
     touches.filter((t: any) => t.type === 'press').forEach(() => {
-      fish.velocity.y = -height * 0.012;
+      // Adjust jump strength based on difficulty
+      fish.velocity.y = -height * (0.012 / difficulty.gravityMultiplier);
+      SoundManager.getInstance().playSound('jump');
     });
   
-    coin.position.x -= gameSpeed;
-    topObstacle.position.x -= gameSpeed;
-    bottomObstacle.position.x -= gameSpeed;
+    // Apply difficulty-based speed
+    coin.position.x -= difficulty.speed;
+    topObstacle.position.x -= difficulty.speed;
+    bottomObstacle.position.x -= difficulty.speed;
   
     coin.renderer = <Coin position={coin.position} />;
     topObstacle.renderer = <Obstacle position={topObstacle.position} isTop={true} />;
@@ -157,15 +195,17 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
       Math.abs(fish.position.y + FISH_SIZE / 3 - coin.position.y) < FISH_SIZE * 0.6
     ) {
       setSessionCoins((prev) => prev + 1);
-      setScore((prev) => prev + 1);
+      // Apply difficulty-based scoring
+      setScore((prev) => prev + difficulty.scoreMultiplier);
+      SoundManager.getInstance().playSound('coin');
       coin.position.x = width;
       const { top, bottom } = generateObstaclePositions();
       coin.position.y = (top + (height - bottom)) / 2;
     }
   
     const hasCollided =
-      fish.position.y < BUFFER_ZONE / 2 ||
-      fish.position.y > height - FISH_SIZE - BUFFER_ZONE / 2 ||
+      fish.position.y < difficulty.bufferZone / 2 ||
+      fish.position.y > height - FISH_SIZE - difficulty.bufferZone / 2 ||
       (topObstacle.position.x < fish.position.x + FISH_SIZE * 0.8 &&
         topObstacle.position.x + 20 > fish.position.x &&
         fish.position.y < topObstacle.position.y) ||
@@ -174,6 +214,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
         fish.position.y + FISH_SIZE * 0.6 > bottomObstacle.position.y);
   
     if (hasCollided) {
+      SoundManager.getInstance().playSound('crash');
       dispatch({ type: "game-over" });
     }
   
@@ -224,12 +265,20 @@ const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, coins, setCoins, se
               onGameOver(score);
             }
           }}
-          running={!isPaused}
+          running={isPlaying && !isPaused}
         />
         {!isPlaying && (
-          <View style={styles.tapToStart}>
+          <TouchableOpacity
+            style={styles.tapToStart}
+            onPress={() => {
+              setIsPlaying(true);
+              if (gameEngine) {
+                gameEngine.start();
+              }
+            }}
+          >
             <Text style={styles.tapToStartText}>TAP TO START</Text>
-          </View>
+          </TouchableOpacity>
         )}
         {isPaused && renderPauseMenu()}
         <TouchableOpacity
@@ -250,19 +299,24 @@ const styles = StyleSheet.create({
   hud: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 10,
+    padding: Math.min(width * 0.03, 15),
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
   },
   score: {
     color: '#F7F7F7',
-    fontSize: 28,
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: '700',
     textShadowColor: '#FF6E40',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
     backgroundColor: 'rgba(30, 61, 89, 0.85)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
+    paddingHorizontal: Math.min(width * 0.04, 20),
+    paddingVertical: Math.min(width * 0.02, 10),
+    borderRadius: Math.min(width * 0.04, 20),
     borderWidth: 2,
     borderColor: '#F5B971',
     shadowColor: '#17B794',
@@ -273,15 +327,15 @@ const styles = StyleSheet.create({
   },
   coins: {
     color: '#F7F7F7',
-    fontSize: 28,
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: '700',
     textShadowColor: '#FF6E40',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
     backgroundColor: 'rgba(30, 61, 89, 0.85)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
+    paddingHorizontal: Math.min(width * 0.04, 20),
+    paddingVertical: Math.min(width * 0.02, 10),
+    borderRadius: Math.min(width * 0.04, 20),
     borderWidth: 2,
     borderColor: '#F5B971',
     shadowColor: '#17B794',
@@ -301,28 +355,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 61, 89, 0.4)',
+    backgroundColor: 'rgba(30, 61, 89, 0.6)',
   },
   tapToStartText: {
     color: '#F7F7F7',
-    fontSize: width * 0.08,
+    fontSize: Math.min(width * 0.07, 36), // Cap the max size
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 3,
     textShadowColor: '#FF6E40',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 15,
-    backgroundColor: 'rgba(30, 61, 89, 0.9)',
-    paddingHorizontal: 35,
-    paddingVertical: 20,
-    borderRadius: 30,
-    borderWidth: 2,
+    backgroundColor: 'rgba(30, 61, 89, 0.95)',
+    paddingHorizontal: Math.min(width * 0.1, 50), // Responsive padding
+    paddingVertical: Math.min(width * 0.05, 25),
+    borderRadius: Math.min(width * 0.06, 30),
+    borderWidth: 3,
     borderColor: '#F5B971',
     shadowColor: '#17B794',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.5,
     shadowRadius: 12,
     elevation: 10,
+    textAlign: 'center',
+    maxWidth: width * 0.8, // Prevent text from going off screen
   },
   pauseMenu: {
     position: 'absolute',
@@ -333,11 +389,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(30, 61, 89, 0.95)',
+    zIndex: 2,
   },
   pauseBox: {
     backgroundColor: 'rgba(30, 61, 89, 0.95)',
-    padding: 35,
-    borderRadius: 25,
+    padding: Math.min(width * 0.06, 30),
+    borderRadius: Math.min(width * 0.05, 25),
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#F5B971',
@@ -346,27 +403,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 10,
+    maxWidth: width * 0.8,
   },
   pauseTitle: {
     color: '#F7F7F7',
-    fontSize: width * 0.09,
+    fontSize: Math.min(width * 0.06, 30),
     fontWeight: '800',
-    marginBottom: 25,
+    marginBottom: Math.min(width * 0.05, 25),
     textTransform: 'uppercase',
     letterSpacing: 3,
     textShadowColor: '#FF6E40',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 15,
+    textAlign: 'center',
   },
   pauseButtons: {
     flexDirection: 'row',
-    gap: 20,
+    gap: Math.min(width * 0.04, 20),
   },
   pauseButton: {
     backgroundColor: 'rgba(255, 110, 64, 0.9)',
-    padding: 18,
-    margin: 5,
-    borderRadius: 20,
+    padding: Math.min(width * 0.035, 18),
+    margin: Math.min(width * 0.01, 5),
+    borderRadius: Math.min(width * 0.04, 20),
     borderWidth: 2,
     borderColor: '#F5B971',
     shadowColor: '#17B794',
@@ -377,16 +436,18 @@ const styles = StyleSheet.create({
   },
   pauseButtonText: {
     color: '#F7F7F7',
-    fontSize: width * 0.07,
+    fontSize: Math.min(width * 0.05, 24),
     fontWeight: '700',
     textShadowColor: 'rgba(30, 61, 89, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+    textAlign: 'center',
   },
   pauseButtonFixed: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
+    bottom: Math.min(height * 0.03, 20),
+    right: Math.min(width * 0.04, 20),
+    zIndex: 1,
   },
 });
 

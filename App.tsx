@@ -3,6 +3,7 @@ import { SafeAreaView, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SoundManager from './src/utils/SoundManager';
 
 import StartScreen from './src/screens/StartScreen';
 import GameScreen from './src/screens/GameScreen';
@@ -20,6 +21,62 @@ const App = () => {
   const [coins, setCoins] = useState(100);
   const [purchasedSkins, setPurchasedSkins] = useState<string[]>([]);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [selectedSkin, setSelectedSkin] = useState<string>('default');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
+
+  // Initialize sound manager
+  useEffect(() => {
+    const initSound = async () => {
+      const soundManager = SoundManager.getInstance();
+      await soundManager.loadSounds();
+      soundManager.setMusicEnabled(musicEnabled);
+      soundManager.setSoundEnabled(soundEnabled);
+    };
+    initSound();
+    return () => {
+      SoundManager.getInstance().cleanup();
+    };
+  }, [musicEnabled, soundEnabled]);
+
+  // Load saved settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const [savedSound, savedMusic, savedSkin] = await Promise.all([
+          AsyncStorage.getItem('soundEnabled'),
+          AsyncStorage.getItem('musicEnabled'),
+          AsyncStorage.getItem('selectedSkin')
+        ]);
+        
+        if (savedSound !== null) setSoundEnabled(savedSound === 'true');
+        if (savedMusic !== null) setMusicEnabled(savedMusic === 'true');
+        if (savedSkin) setSelectedSkin(savedSkin);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // Save sound settings when changed
+  useEffect(() => {
+    AsyncStorage.setItem('soundEnabled', soundEnabled.toString());
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('musicEnabled', musicEnabled.toString());
+  }, [musicEnabled]);
+
+  const handleSoundToggle = useCallback((enabled: boolean) => {
+    setSoundEnabled(enabled);
+    SoundManager.getInstance().setSoundEnabled(enabled);
+  }, []);
+
+  const handleMusicToggle = useCallback((enabled: boolean) => {
+    setMusicEnabled(enabled);
+    SoundManager.getInstance().setMusicEnabled(enabled);
+  }, []);
 
 
   const goToHome = useCallback(async () => {
@@ -46,12 +103,41 @@ const App = () => {
     setPurchasedSkins(prev => [...prev, fishId]);
   }, []);
 
+  // Load saved data on startup
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        const [savedSkins, savedSelectedSkin] = await Promise.all([
+          AsyncStorage.getItem('purchasedSkins'),
+          AsyncStorage.getItem('selectedSkin')
+        ]);
+        
+        if (savedSkins) {
+          setPurchasedSkins(JSON.parse(savedSkins));
+        }
+        if (savedSelectedSkin) {
+          setSelectedSkin(savedSelectedSkin);
+        }
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+      }
+    };
+    loadSavedData();
+  }, []);
+
+  // Save purchased skins when updated
   useEffect(() => {
     AsyncStorage.setItem('purchasedSkins', JSON.stringify(purchasedSkins));
   }, [purchasedSkins]);
 
+  // Save selected skin when updated
+  useEffect(() => {
+    AsyncStorage.setItem('selectedSkin', selectedSkin);
+  }, [selectedSkin]);
+
   const handleSkinSelection = useCallback((skinId: string) => {
-    console.log(`Skin geselecteerd met ID: ${skinId}`);
+    setSelectedSkin(skinId);
+    setCurrentScreen('start');
   }, []);
 
   return (
@@ -74,6 +160,7 @@ const App = () => {
             coins={coins}
             setCoins={setCoins}
             selectedMode={selectedMode}
+            selectedSkin={selectedSkin}
           />
         )}
         {currentScreen === 'gameOver' && (
@@ -96,7 +183,13 @@ const App = () => {
           />
         )}
         {currentScreen === 'settings' && (
-          <SettingsScreen onBack={goToHome} />
+          <SettingsScreen
+            onBack={goToHome}
+            soundEnabled={soundEnabled}
+            musicEnabled={musicEnabled}
+            onSoundToggle={handleSoundToggle}
+            onMusicToggle={handleMusicToggle}
+          />
         )}
         {currentScreen === 'shop' && (
           <ShopScreen
@@ -111,6 +204,7 @@ const App = () => {
             onBack={goToHome}
             purchasedSkins={purchasedSkins}
             onSkinSelected={handleSkinSelection}
+            currentSkin={selectedSkin}
           />
         )}
       </SafeAreaView>

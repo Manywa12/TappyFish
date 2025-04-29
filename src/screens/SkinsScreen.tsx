@@ -5,20 +5,20 @@ type SkinsScreenProps = {
   onBack: () => void;
   purchasedSkins: string[];
   onSkinSelected: (skinId: string) => void;
+  currentSkin: string;
 };
 
-const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSkinSelected }) => {
-  const [selectedSkin, setSelectedSkin] = useState<string | null>('default');
+const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSkinSelected, currentSkin }) => {
+  const [selectedSkin, setSelectedSkin] = useState<string>(currentSkin);
 
   const handleSkinPress = useCallback((skinId: string) => {
     setSelectedSkin(skinId);
   }, []);
 
-  const handleSelectSkin = useCallback(() => {
-    if (selectedSkin) {
-      onSkinSelected(selectedSkin);
-    }
-  }, [selectedSkin, onSkinSelected]);
+  const handleConfirm = useCallback(() => {
+    onSkinSelected(selectedSkin);
+    onBack();
+  }, [selectedSkin, onSkinSelected, onBack]);
 
   return (
     <ImageBackground
@@ -30,7 +30,7 @@ const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSki
 
         <View style={styles.topPreview}>
           <Text style={styles.currentSkinText}>Huidige Skin:</Text>
-     <TouchableOpacity style={styles.selectedFishContainer} onPress={() => {}}>
+          <View style={styles.selectedFishContainer}>
             <Image
               source={
                 selectedSkin === 'default'
@@ -42,7 +42,7 @@ const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSki
               style={styles.selectedFishImage}
               resizeMode="contain"
             />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.bottomPreviews}>
@@ -79,13 +79,18 @@ const SkinsScreen: React.FC<SkinsScreenProps> = ({ onBack, purchasedSkins, onSki
             ))}
         </View>
 
-        {purchasedSkins.length === 0 && (
-          <Text style={styles.noSkinsText}>Je hebt nog geen skins gekocht.</Text>
-        )}
-
         <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>Terug naar Start</Text>
+          <TouchableOpacity 
+            style={[styles.button, styles.confirmButton]} 
+            onPress={handleConfirm}
+          >
+            <Text style={styles.buttonText}>Bevestig Selectie</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.button, styles.cancelButton]} 
+            onPress={onBack}
+          >
+            <Text style={styles.buttonText}>Annuleren</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -107,28 +112,30 @@ const getFishImage = (fishId: string) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { 
+    flex: 1 
+  },
   overlay: {
     flex: 1,
-    padding: 25,
+    padding: 20,
     alignItems: 'center',
     backgroundColor: 'rgba(30, 61, 89, 0.92)',
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 36,
+    fontSize: 20,
     fontWeight: '800',
-    marginBottom: 25,
+    marginBottom: 20,
     color: '#F7F7F7',
     textTransform: 'uppercase',
-    letterSpacing: 3,
+    letterSpacing: 1,
     textShadowColor: '#FF6E40',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 15,
     backgroundColor: 'rgba(30, 61, 89, 0.95)',
-    paddingHorizontal: 35,
-    paddingVertical: 20,
-    borderRadius: 25,
+    paddingHorizontal: 25,
+    paddingVertical: 15,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: '#F5B971',
     shadowColor: '#17B794',
@@ -139,13 +146,13 @@ const styles = StyleSheet.create({
   },
   topPreview: {
     alignItems: 'center',
-    marginBottom: 35,
+    marginBottom: 25,
   },
   selectedFishContainer: {
-    width: 180,
-    height: 180,
+    width: 140,
+    height: 140,
     backgroundColor: 'rgba(30, 61, 89, 0.95)',
-    borderRadius: 25,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -156,55 +163,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  selectedFishImage: { width: 150, height: 150 },
-  emptySelectedFishContainer: {
-    width: 180,
-    height: 180,
-    backgroundColor: 'rgba(30, 61, 89, 0.8)',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#F5B971',
-  },
-  emptyText: {
-    color: '#F7F7F7',
-    fontSize: 18,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  selectButton: {
-    backgroundColor: 'rgba(255, 110, 64, 0.9)',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 20,
-    marginTop: 15,
-    borderWidth: 2,
-    borderColor: '#F5B971',
-    shadowColor: '#17B794',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  selectButtonText: {
-    color: '#F7F7F7',
-    fontSize: 20,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(30, 61, 89, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+  selectedFishImage: { 
+    width: 110, 
+    height: 110 
   },
   bottomPreviews: {
     flexDirection: 'row',
     width: '100%',
     justifyContent: 'space-around',
-    marginBottom: 25,
+    marginBottom: 20,
     backgroundColor: 'rgba(30, 61, 89, 0.95)',
-    padding: 20,
+    padding: 15,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#F5B971',
@@ -215,10 +184,10 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   previewPlaceholder: {
-    width: 90,
-    height: 90,
+    width: 70,
+    height: 70,
     backgroundColor: 'rgba(255, 110, 64, 0.9)',
-    borderRadius: 15,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -229,7 +198,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  previewImage: { width: 70, height: 70 },
+  previewImage: { 
+    width: 50, 
+    height: 50 
+  },
   selectedPlaceholder: {
     borderColor: '#F5B971',
     borderWidth: 3,
@@ -243,25 +215,44 @@ const styles = StyleSheet.create({
   bottomButtonContainer: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 25,
+    marginTop: 'auto',
+    marginBottom: 20,
+    gap: 10,
   },
-  backButton: {
-    backgroundColor: 'rgba(30, 61, 89, 0.95)',
-    paddingVertical: 18,
-    paddingHorizontal: 45,
-    borderRadius: 20,
-    width: '90%',
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 15,
+    width: '80%',
     alignItems: 'center',
     borderWidth: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  confirmButton: {
+    backgroundColor: 'rgba(255, 110, 64, 0.9)',
     borderColor: '#F5B971',
     shadowColor: '#17B794',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(30, 61, 89, 0.95)',
+    borderColor: '#F5B971',
+    shadowColor: '#17B794',
+  },
+  buttonText: {
+    color: '#F7F7F7',
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    textShadowColor: 'rgba(255, 110, 64, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   currentSkinText: {
-    fontSize: 22,
+    fontSize: 16,
     color: '#F7F7F7',
     marginBottom: 15,
     fontWeight: '600',
@@ -271,20 +262,10 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  backButtonText: {
-    color: '#F7F7F7',
-    fontSize: 22,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(255, 110, 64, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
   noSkinsText: {
-    fontSize: 22,
+    fontSize: 16,
     color: '#F7F7F7',
-    marginTop: 50,
+    marginTop: 40,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -292,7 +273,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
     backgroundColor: 'rgba(30, 61, 89, 0.95)',
-    padding: 20,
+    padding: 15,
     borderRadius: 15,
     borderWidth: 2,
     borderColor: '#F5B971',
