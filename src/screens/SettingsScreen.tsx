@@ -28,22 +28,24 @@ const SettingsScreen = ({ onBack }: { onBack: () => void }) => {
     <View style={styles.settingItem}>
       <Text style={styles.settingText}>Geluid</Text>
       <Switch
-        trackColor={{ false: '#767577', true: '#81b0ff' }}
-        thumbColor={soundEnabled ? '#f4f3f4' : '#767577'}
-        ios_backgroundColor="#3e3e3e"
+        trackColor={{ false: 'rgba(30, 61, 89, 0.9)', true: 'rgba(255, 110, 64, 0.9)' }}
+        thumbColor={soundEnabled ? '#F5B971' : '#17B794'}
+        ios_backgroundColor="rgba(30, 61, 89, 0.9)"
         onValueChange={toggleSound}
         value={soundEnabled}
+        style={{ transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }] }}
       />
     </View>
 
     <View style={styles.settingItem}>
       <Text style={styles.settingText}>Muziek</Text>
       <Switch
-        trackColor={{ false: '#767577', true: '#81b0ff' }}
-        thumbColor={musicEnabled ? '#f4f3f4' : '#767577'}
-        ios_backgroundColor="#3e3e3e"
+        trackColor={{ false: 'rgba(30, 61, 89, 0.9)', true: 'rgba(255, 110, 64, 0.9)' }}
+        thumbColor={musicEnabled ? '#F5B971' : '#17B794'}
+        ios_backgroundColor="rgba(30, 61, 89, 0.9)"
         onValueChange={toggleMusic}
         value={musicEnabled}
+        style={{ transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }] }}
       />
     </View>
   </View>
@@ -67,36 +69,72 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 25,
+    backgroundColor: 'rgba(30, 61, 89, 0.92)',
     width: '100%',
     height: '100%',
-    justifyContent: 'space-between', // Houdt de titel en knop aan de uiteinden
+    justifyContent: 'space-between',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 2,
+    fontSize: 36,
+    fontWeight: '800',
+    marginBottom: 35,
+    color: '#F7F7F7',
+    textTransform: 'uppercase',
+    letterSpacing: 3,
+    textShadowColor: '#FF6E40',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 15,
+    backgroundColor: 'rgba(30, 61, 89, 0.95)',
+    paddingHorizontal: 35,
+    paddingVertical: 20,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: '#F5B971',
+    shadowColor: '#17B794',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
   },
   settingsContainer: {
-    width: '80%',
+    width: '85%',
+    backgroundColor: 'rgba(30, 61, 89, 0.95)',
+    padding: 25,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#F5B971',
+    shadowColor: '#17B794',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20, // Houdt nu de ruimte tussen de instellingen
+    marginBottom: 20,
+    backgroundColor: 'rgba(255, 110, 64, 0.15)',
+    padding: 20,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#F5B971',
+    shadowColor: '#17B794',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   settingText: {
-    fontSize: 20,
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    fontSize: 22,
+    color: '#F7F7F7',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    textShadowColor: 'rgba(255, 110, 64, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   bottomButtonContainer: {
     width: '100%',
@@ -104,21 +142,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
-    backgroundColor: 'rgba(0, 123, 255, 0.8)',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 10,
+    backgroundColor: 'rgba(30, 61, 89, 0.95)',
+    paddingVertical: 18,
+    paddingHorizontal: 45,
+    borderRadius: 20,
     width: '90%',
     alignItems: 'center',
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#F5B971',
+    shadowColor: '#17B794',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
   backButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    color: '#F7F7F7',
+    fontSize: 22,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(255, 110, 64, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
 });
 
